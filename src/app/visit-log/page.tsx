@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/components/ui/use-toast";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -36,6 +37,7 @@ interface Visit {
 }
 
 export default function VisitLogPage() {
+  const { toast } = useToast();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -76,8 +78,82 @@ export default function VisitLogPage() {
   }, [search, course, date, currentPage]);
 
   const handleExport = async () => {
-    // TODO: Implement CSV export
-    console.log("Export to CSV");
+    try {
+      toast({
+        title: "Downloading CSV",
+        description: "Your file will be downloaded shortly...",
+      });
+
+      // Get all visits for export
+      const params = new URLSearchParams({
+        page: "1",
+        limit: "1000", // Get more records for export
+      });
+      if (search) params.append("search", search);
+      if (course) params.append("grade", course);
+      if (date) {
+        const selectedDate = new Date(date);
+        params.append("startDate", selectedDate.toISOString());
+        selectedDate.setHours(23, 59, 59, 999);
+        params.append("endDate", selectedDate.toISOString());
+      }
+
+      const res = await fetch(`/api/visits?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch visits");
+      const data = await res.json();
+
+      // Convert to CSV
+      const headers = [
+        "Date",
+        "Time",
+        "Name",
+        "RFID",
+        "Course",
+        "Year",
+        "Section",
+      ];
+      const rows = data.visits.map((visit: Visit) => [
+        new Date(visit.check_in_date).toLocaleDateString(),
+        new Date(
+          `${visit.check_in_date}T${visit.check_in_time}`
+        ).toLocaleTimeString(),
+        `${visit.student.first_name} ${visit.student.last_name}`,
+        visit.student.rfid_number,
+        visit.student.course,
+        visit.student.year_level,
+        visit.student.section,
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row: string[]) => row.join(",")),
+      ].join("\n");
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `visit_log_${new Date().toISOString().split("T")[0]}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Download Complete",
+        description: "The CSV file has been downloaded successfully.",
+      });
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export visit log to CSV.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
