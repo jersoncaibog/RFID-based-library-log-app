@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const period = searchParams.get('period') || 'all' // all, today, week, month
     const limit = parseInt(searchParams.get('limit') || '10')
 
-    let dateFilter = {}
+    let dateFilter: { gte: Date } | undefined
     const now = new Date()
 
     switch (period) {
@@ -31,35 +31,31 @@ export async function GET(request: Request) {
           gte: monthAgo
         }
         break
+      default:
+        dateFilter = undefined
     }
 
-    const topVisitors = await prisma.student.findMany({
-      where: {
-        status: 'active',
-        check_ins: period !== 'all' ? {
-          some: {
-            check_in_date: dateFilter
-          }
-        } : undefined
-      },
-      include: {
-        _count: {
-          select: {
-            check_ins: period !== 'all' ? {
-              where: {
-                check_in_date: dateFilter
-              }
-            } : true
-          }
-        }
-      },
-      orderBy: {
+    const students = await prisma.student.findMany({
+      select: {
+        student_id: true,
+        first_name: true,
+        last_name: true,
         check_ins: {
-          _count: 'desc'
+          where: dateFilter ? {
+            check_in_date: dateFilter
+          } : undefined
         }
-      },
-      take: limit
+      }
     })
+
+    const topVisitors = students
+      .map(student => ({
+        student_id: student.student_id,
+        full_name: `${student.first_name} ${student.last_name}`,
+        visit_count: student.check_ins.length
+      }))
+      .sort((a, b) => b.visit_count - a.visit_count)
+      .slice(0, limit)
 
     return NextResponse.json(topVisitors)
   } catch (error) {

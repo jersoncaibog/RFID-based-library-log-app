@@ -1,36 +1,88 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
 
-// Mock data for the leaderboard
-const mockLeaderboard = [
-  { id: 1, name: "John Doe", visits: 45, course: "BSIT 2A" },
-  { id: 2, name: "Jane Smith", visits: 42, course: "BSCS 3B" },
-  { id: 3, name: "Mike Johnson", visits: 38, course: "BSIS 2C" },
-  { id: 4, name: "Sarah Williams", visits: 35, course: "BSIT 1A" },
-  { id: 5, name: "David Brown", visits: 33, course: "BSCS 2A" },
-  { id: 6, name: "Emily Davis", visits: 30, course: "BSIS 3B" },
-  { id: 7, name: "James Wilson", visits: 28, course: "BSIT 4C" },
-  { id: 8, name: "Lisa Anderson", visits: 25, course: "BSCS 1C" },
-  { id: 9, name: "Robert Taylor", visits: 23, course: "BSIS 1B" },
-  { id: 10, name: "Mary Martin", visits: 20, course: "BSIT 3A" },
-];
+interface LeaderboardEntry {
+  student_id: number;
+  full_name: string;
+  visit_count: number;
+}
 
-function CheckInForm() {
+function CheckInForm({
+  onSuccessfulCheckIn,
+}: {
+  onSuccessfulCheckIn: () => void;
+}) {
+  const [rfid, setRfid] = useState("");
+  const [status, setStatus] = useState("Waiting for card scan...");
+
+  const handleRefresh = () => {
+    setRfid("");
+    setStatus("Waiting for card scan...");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rfid_number: rfid }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setStatus(data.error);
+        return;
+      }
+
+      setStatus(
+        `${data.checkIn.student.first_name} ${data.checkIn.student.last_name} checked in successfully`
+      );
+      setRfid("");
+      onSuccessfulCheckIn();
+    } catch (error) {
+      console.error("Error checking in:", error);
+      setStatus("Failed to check in. Please try again.");
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Student Check-in</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>Student Check-in</CardTitle>
+          <Button variant="outline" onClick={handleRefresh}>
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label htmlFor="rfid" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label
+              htmlFor="rfid"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
               Scan RFID Card
             </label>
             <Input
               id="rfid"
+              value={rfid}
+              onChange={(e) => setRfid(e.target.value)}
               placeholder="Place RFID card on scanner..."
               autoFocus
             />
@@ -39,21 +91,65 @@ function CheckInForm() {
             Check In
           </Button>
         </form>
-        
-        {/* Status display area */}
+
         <div className="mt-6 p-4 bg-slate-50 rounded-md">
-          <p className="text-slate-600">Waiting for card scan...</p>
+          <p className="text-slate-600">{status}</p>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function Leaderboard() {
+function Leaderboard({ refreshTrigger }: { refreshTrigger: number }) {
+  const [topVisitors, setTopVisitors] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLeaderboard = async () => {
+    try {
+      const res = await fetch("/api/leaderboard?period=month");
+      if (!res.ok) throw new Error("Failed to fetch leaderboard");
+      const data = await res.json();
+      setTopVisitors(data);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [refreshTrigger]);
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Top Visitors</CardTitle>
+            <Button variant="outline" onClick={fetchLeaderboard}>
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p>Loading...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top Visitors</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>Top Visitors</CardTitle>
+          <Button variant="outline" onClick={fetchLeaderboard}>
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -61,17 +157,17 @@ function Leaderboard() {
             <TableRow>
               <TableHead className="w-[80px]">Rank</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Course & Sec</TableHead>
               <TableHead className="text-right">Visits</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockLeaderboard.map((student, index) => (
-              <TableRow key={student.id}>
+            {topVisitors.map((entry, index) => (
+              <TableRow key={entry.student_id}>
                 <TableCell className="font-medium">{index + 1}</TableCell>
-                <TableCell>{student.name}</TableCell>
-                <TableCell>{student.course}</TableCell>
-                <TableCell className="text-right">{student.visits}</TableCell>
+                <TableCell>{entry.full_name}</TableCell>
+                <TableCell className="text-right">
+                  {entry.visit_count}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -82,10 +178,22 @@ function Leaderboard() {
 }
 
 export default function Dashboard() {
+  const [lastCheckIn, setLastCheckIn] = useState<number>(0);
+
+  const handleSuccessfulCheckIn = () => {
+    setLastCheckIn(Date.now());
+  };
+
   return (
-    <div className="grid grid-cols-2 gap-8">
-      <CheckInForm />
-      <Leaderboard />
+    <div className="max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8 justify-center">
+        <div className="h-fit w-full max-w-[400px] mx-auto">
+          <CheckInForm onSuccessfulCheckIn={handleSuccessfulCheckIn} />
+        </div>
+        <div className="h-fit w-full max-w-[900px] mx-auto">
+          <Leaderboard refreshTrigger={lastCheckIn} />
+        </div>
+      </div>
     </div>
   );
 }

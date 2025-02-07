@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { Status } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 
 // GET /api/students - List all students with search and filters
@@ -7,9 +7,9 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
-    const grade = searchParams.get('grade')
+    const course = searchParams.get('course')
+    const year = searchParams.get('year')
     const section = searchParams.get('section')
-    const status = searchParams.get('status')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
 
@@ -22,9 +22,9 @@ export async function GET(request: Request) {
             { rfid_number: { contains: search } }
           ] : undefined
         },
-        { grade_level: grade || undefined },
-        { section: section || undefined },
-        { status: status ? (status as Status) : undefined }
+        { course: course || undefined },
+        { year_level: year || undefined },
+        { section: section || undefined }
       ]
     }
 
@@ -61,16 +61,15 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const student = await prisma.student.create({
-      data: {
-        rfid_number: body.rfid_number,
-        first_name: body.first_name,
-        last_name: body.last_name,
-        grade_level: body.grade_level,
-        section: body.section,
-        status: body.status || 'active'
-      }
-    })
+    const studentData: Prisma.StudentCreateInput = {
+      rfid_number: body.rfid_number,
+      first_name: body.first_name,
+      last_name: body.last_name,
+      course: body.course || null,
+      year_level: body.year_level || null,
+      section: body.section || null
+    }
+    const student = await prisma.student.create({ data: studentData })
     return NextResponse.json(student)
   } catch (error) {
     console.error('Failed to create student:', error)

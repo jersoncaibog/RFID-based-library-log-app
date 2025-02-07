@@ -19,14 +19,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if student is inactive
-    if (student.status === 'inactive') {
-      return NextResponse.json(
-        { error: 'Student is inactive' },
-        { status: 400 }
-      )
-    }
-
     // Create the check-in record
     const checkIn = await prisma.checkIn.create({
       data: {

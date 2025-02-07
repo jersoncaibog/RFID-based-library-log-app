@@ -50,9 +50,9 @@ export async function PUT(
         rfid_number: body.rfid_number,
         first_name: body.first_name,
         last_name: body.last_name,
-        grade_level: body.grade_level,
-        section: body.section,
-        status: body.status
+        course: body.course,
+        year_level: body.year_level,
+        section: body.section
       }
     })
     return NextResponse.json(student)

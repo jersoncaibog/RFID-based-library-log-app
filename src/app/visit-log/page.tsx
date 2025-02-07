@@ -1,31 +1,100 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
 
-// Mock data for visit logs
-const mockVisitLogs = [
-  { id: 1, studentName: "John Doe", rfid: "RF001", course: "BSBA 2A", checkInTime: "2024-02-07 09:15:23" },
-  { id: 2, studentName: "Jane Smith", rfid: "RF002", course: "BSED 3B", checkInTime: "2024-02-07 09:30:45" },
-  { id: 3, studentName: "Mike Johnson", rfid: "RF003", course: "BSIS 2C", checkInTime: "2024-02-07 10:05:12" },
-  { id: 4, studentName: "Sarah Williams", rfid: "RF004", course: "BSIT 1A", checkInTime: "2024-02-07 10:15:33" },
-  { id: 5, studentName: "David Brown", rfid: "RF005", course: "BSBA 2A", checkInTime: "2024-02-07 10:45:18" },
-  { id: 6, studentName: "Emily Davis", rfid: "RF006", course: "BSIS 3B", checkInTime: "2024-02-07 11:00:55" },
-  { id: 7, studentName: "James Wilson", rfid: "RF007", course: "BSIT 4C", checkInTime: "2024-02-07 11:20:40" },
-  { id: 8, studentName: "Lisa Anderson", rfid: "RF008", course: "BSED 1C", checkInTime: "2024-02-07 11:35:27" },
-  { id: 9, studentName: "Robert Taylor", rfid: "RF009", course: "BSIS 1B", checkInTime: "2024-02-07 12:05:15" },
-  { id: 10, studentName: "Mary Martin", rfid: "RF010", course: "BSIT 3A", checkInTime: "2024-02-07 12:30:08" },
-];
+interface Visit {
+  check_in_id: number;
+  student: {
+    first_name: string;
+    last_name: string;
+    rfid_number: string;
+    course: string;
+    year_level: string;
+    section: string;
+  };
+  check_in_time: string;
+  check_in_date: string;
+}
 
 export default function VisitLogPage() {
+  const [visits, setVisits] = useState<Visit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [course, setCourse] = useState("");
+  const [date, setDate] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const fetchVisits = async () => {
+    try {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: "10",
+      });
+      if (search) params.append("search", search);
+      if (course) params.append("grade", course);
+      if (date) {
+        const selectedDate = new Date(date);
+        params.append("startDate", selectedDate.toISOString());
+        selectedDate.setHours(23, 59, 59, 999);
+        params.append("endDate", selectedDate.toISOString());
+      }
+
+      const res = await fetch(`/api/visits?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch visits");
+      const data = await res.json();
+      setVisits(data.visits);
+      setTotalPages(data.pages);
+    } catch (error) {
+      console.error("Error fetching visits:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVisits();
+  }, [search, course, date, currentPage]);
+
+  const handleExport = async () => {
+    // TODO: Implement CSV export
+    console.log("Export to CSV");
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Visit Log</h1>
-        <Button>
-          Export to CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={fetchVisits}>
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Refresh
+          </Button>
+          <Button onClick={handleExport}>Export to CSV</Button>
+        </div>
       </div>
 
       {/* Filters Section */}
@@ -34,21 +103,25 @@ export default function VisitLogPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Input
               placeholder="Search by name or RFID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full"
             />
-            <Select>
+            <Select value={course} onValueChange={setCourse}>
               <SelectTrigger>
                 <SelectValue placeholder="Course" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="bsit">BSIT</SelectItem>
-                <SelectItem value="bsis">BSIS</SelectItem>
-                <SelectItem value="bsba">BSBA</SelectItem>
-                <SelectItem value="bsed">BSED</SelectItem>
+                <SelectItem value="BSIT">BSIT</SelectItem>
+                <SelectItem value="BSIS">BSIS</SelectItem>
+                <SelectItem value="BSBA">BSBA</SelectItem>
+                <SelectItem value="BSED">BSED</SelectItem>
               </SelectContent>
             </Select>
             <Input
               type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
               className="w-full"
             />
           </div>
@@ -68,12 +141,38 @@ export default function VisitLogPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockVisitLogs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell>{log.checkInTime}</TableCell>
-                  <TableCell>{log.studentName}</TableCell>
-                  <TableCell className="font-mono">{log.rfid}</TableCell>
-                  <TableCell>{log.course}</TableCell>
+              {visits.map((visit) => (
+                <TableRow key={visit.check_in_id}>
+                  <TableCell>
+                    {(() => {
+                      try {
+                        const date = new Date(
+                          `${visit.check_in_date} ${visit.check_in_time}`
+                        );
+                        return date.toLocaleString("en-US", {
+                          year: "numeric",
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        });
+                      } catch (e) {
+                        console.error("Date parsing error:", e);
+                        return "Invalid Date";
+                      }
+                    })()}
+                  </TableCell>
+                  <TableCell>
+                    {visit.student.first_name} {visit.student.last_name}
+                  </TableCell>
+                  <TableCell className="font-mono">
+                    {visit.student.rfid_number}
+                  </TableCell>
+                  <TableCell>
+                    {visit.student.course} {visit.student.year_level}-
+                    {visit.student.section}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -82,16 +181,31 @@ export default function VisitLogPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between py-4">
             <p className="text-sm text-slate-600">
-              Showing <span className="font-medium">1</span> to <span className="font-medium">10</span> of{" "}
-              <span className="font-medium">50</span> results
+              Page {currentPage} of {totalPages}
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">Previous</Button>
-              <Button variant="outline" size="sm">Next</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
     </div>
   );
-} 
+}
