@@ -46,6 +46,13 @@ export default function VisitLogPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const resetFilters = () => {
+    setSearch("");
+    setCourse("");
+    setDate("");
+    setCurrentPage(1);
+  };
+
   const fetchVisits = async () => {
     try {
       const params = new URLSearchParams({
@@ -165,6 +172,9 @@ export default function VisitLogPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Visit Log</h1>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={resetFilters}>
+            Reset Filters
+          </Button>
           <Button variant="outline" onClick={fetchVisits}>
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh

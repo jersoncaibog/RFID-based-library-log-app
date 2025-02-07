@@ -423,6 +423,13 @@ export default function StudentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const resetFilters = () => {
+    setSearch("");
+    setCourse("");
+    setYear("");
+    setCurrentPage(1);
+  };
+
   const fetchStudents = async () => {
     try {
       const params = new URLSearchParams({
@@ -458,6 +465,9 @@ export default function StudentsPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Student Management</h1>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={resetFilters}>
+            Reset Filters
+          </Button>
           <Button variant="outline" onClick={fetchStudents}>
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
