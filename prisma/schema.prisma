@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  @@map("students")
+  student_id  Int       @id @default(autoincrement())
+  rfid_number String    @unique @db.VarChar(255)
+  first_name  String    @db.VarChar(100)
+  last_name   String    @db.VarChar(100)
+  grade_level String?   @db.VarChar(50)
+  section     String?   @db.VarChar(50)
+  status      Status?   @default(active)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  check_ins   CheckIn[]
+  leaderboard Leaderboard?
+}
+
+model CheckIn {
+  @@map("check_ins")
+  check_in_id   Int      @id @default(autoincrement())
+  student_id    Int
+  check_in_time DateTime @db.Time(0)
+  check_in_date DateTime @db.Date
+  device_id     String?  @db.VarChar(255)
+  student       Student  @relation(fields: [student_id], references: [student_id])
+}
+
+model Leaderboard {
+  @@map("leaderboard")
+  student_id Int     @id @default(0)
+  full_name  String? @db.VarChar(201)
+  visit_count BigInt @default(0)
+  student    Student @relation(fields: [student_id], references: [student_id])
+}
+
+enum Status {
+  active
+  inactive
+}

@@ -1,101 +1,91 @@
-import Image from "next/image";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-export default function Home() {
+// Mock data for the leaderboard
+const mockLeaderboard = [
+  { id: 1, name: "John Doe", visits: 45, course: "BSIT 2A" },
+  { id: 2, name: "Jane Smith", visits: 42, course: "BSCS 3B" },
+  { id: 3, name: "Mike Johnson", visits: 38, course: "BSIS 2C" },
+  { id: 4, name: "Sarah Williams", visits: 35, course: "BSIT 1A" },
+  { id: 5, name: "David Brown", visits: 33, course: "BSCS 2A" },
+  { id: 6, name: "Emily Davis", visits: 30, course: "BSIS 3B" },
+  { id: 7, name: "James Wilson", visits: 28, course: "BSIT 4C" },
+  { id: 8, name: "Lisa Anderson", visits: 25, course: "BSCS 1C" },
+  { id: 9, name: "Robert Taylor", visits: 23, course: "BSIS 1B" },
+  { id: 10, name: "Mary Martin", visits: 20, course: "BSIT 3A" },
+];
+
+function CheckInForm() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+    <Card>
+      <CardHeader>
+        <CardTitle>Student Check-in</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="rfid" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Scan RFID Card
+            </label>
+            <Input
+              id="rfid"
+              placeholder="Place RFID card on scanner..."
+              autoFocus
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          </div>
+          <Button className="w-full" type="submit">
+            Check In
+          </Button>
+        </form>
+        
+        {/* Status display area */}
+        <div className="mt-6 p-4 bg-slate-50 rounded-md">
+          <p className="text-slate-600">Waiting for card scan...</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Leaderboard() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Top Visitors</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[80px]">Rank</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Course & Sec</TableHead>
+              <TableHead className="text-right">Visits</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mockLeaderboard.map((student, index) => (
+              <TableRow key={student.id}>
+                <TableCell className="font-medium">{index + 1}</TableCell>
+                <TableCell>{student.name}</TableCell>
+                <TableCell>{student.course}</TableCell>
+                <TableCell className="text-right">{student.visits}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <div className="grid grid-cols-2 gap-8">
+      <CheckInForm />
+      <Leaderboard />
     </div>
   );
 }
